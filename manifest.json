@@ -6,7 +6,7 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "scripting", "webNavigation"],
   "background": {
     "service_worker": "background.js"
   },
@@ -14,7 +14,6 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "contentscripts/inject.js",
         "utils/utils.js"
       ]
     },
@@ -24,11 +23,12 @@
     },
     {
       "matches": ["https://www.aruodas.lt/*"],
-      "js": ["contentscripts/aruodas.js"]
+      "js": ["contentscripts/aruodas.js"],
+      "run_at": "document_start"
     },
     {
       "matches": ["https://skelbiu.lt/*"],
-      "js": ["contentscripts/skelbiu.js"]
+      "js": ["contentscripts/inject.js", "contentscripts/skelbiu.js"]
     },
     {
       "matches": ["https://www.idealista.it/*"],
@@ -41,5 +41,8 @@
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
-  }
+  },
+  "host_permissions": [
+        "https://www.aruodas.lt/*"
+    ]
 }

@@ -6,6 +6,8 @@ const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const bodyParser = require("body-parser");
+const { log } = require("console");
 
 const PORT = process.env.PORT || 3000;
 
@@ -17,6 +19,7 @@ const solver = new TwoCaptcha.Solver(CAPTCHA_API_KEY);
 app.use(cors());
 app.use(express.json());
 const upload = multer({ dest: "uploads/" });
+app.use(bodyParser.json({ limit: "50mb" }));
 
 const router = express.Router();
 
@@ -56,7 +59,6 @@ app.post("/solve-cloudflare-captcha", async (req, res) => {
   const { sitekey, pageurl, data, pagedata, action, userAgent, json } =
     req.body;
   console.log("received request", sitekey, pageurl);
-  return
 
   try {
     const response = await solver.cloudflareTurnstile({
@@ -69,11 +71,15 @@ app.post("/solve-cloudflare-captcha", async (req, res) => {
       json,
     });
     console.log(response);
+    // const response = {
+    //   data: '1.cNR5vElRYtIoEbYkJ4wW38Gvhj2w_QY-UjDIURikSIIpV-enL9mnJZoRbjvGwaIhBv49K5Xvmj_4k8tH441FZY8pCBXQ2naBstrl4w3EDPbdJwM3DtLxE6Eq7ZsIM5-hNwVTtoWmTm01r-ZdbLwrzfzbvjQvye7wV39u-0ZadqmN7ThJRn2IDujicMbyl-ULLj_UjySaYLEIOXYPtZ2_oWKceBGZQmuSypUPPFZih-JlYljFv6IINPcjYq4EJfSZ7cgvMu-Xjcce4RLQ2oBrHky7w9amlYemMpUv3wYVLGDw0cZE1aAV7O6e_jUObHigjquZ1ehjVejdySTOk_fpk3MlbbBk1cqGv7npo7hSI_hR_4BVjYNejVeqZGhb07qwv3sW_deAWswGfr65liwcRZfnSc0J_2FiQs34GF5RKvaOuOBpK1sdgXJTD5KbUPA_PrYCtLPT3bBY3FKCR7bk0Q.GEsEnBiX8f-tWJ8rnt553w.2d4cb5c3aa6eaef1df5b9d8bd8a4628dfcec09033f454e47d4d3d3f6b0b2c0af',
+    //   id: '76874619914'
+    // }
     // const response = { data: "fake-token", id: "fake-id"}
 
     if (response && response.data) {
       const token = response.data;
-      res.json({ token });
+      res.json(response);
     } else {
       throw new Error("Error submitting captcha: " + response.text);
     }
@@ -82,68 +88,32 @@ app.post("/solve-cloudflare-captcha", async (req, res) => {
   }
 });
 
-app.post("/solve-image-captcha", upload.single("file"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
-  }
-
-  // const base64Image = await convertFileToBase64(req.file.path);
-  // console.log("Base64 Image:", base64Image);
-
-  // await solver.imageCaptcha({
-  //   body: imageBase64,
-  //   numeric: 4,
-  //   min_len: 5,
-  //   max_len: 5,
-  // });
-  // res.status(200).json({ message: "Image sent successfully" });
-
-  const destPath = path.join(__dirname, "uploads", req.file.originalname);
-
-  // Rename the temporary file to the desired location
-  fs.rename(req.file.path, destPath, (err) => {
-    if (err) {
-      return res.status(500).json({ error: "Failed to save image" });
-    }
-
-    res
-      .status(200)
-      .json({ message: "Image saved successfully", path: destPath });
-  });
-  return;
-
-  const { formData } = req.body;
-  console.log("received request", req.body);
-  return;
-
+app.post("/solve-image-captcha", async (req, res) => {
   try {
-    const response = await solver.imageCaptcha({ body: captchaBase64 });
-    console.log(response);
-    res.json(response);
-    return;
+    console.log("request received");
+  const imageData = req.body.image;
+  const base64Data = imageData.replace(/^data:image\/jpeg;base64,/, "");
 
-    if (response && response.data) {
-      const token = response.data;
-      res.json({ token });
-    } else {
-      throw new Error("Error submitting captcha: " + response.text);
-    }
+  let captchaResponse = await solver.imageCaptcha({ body: base64Data });
+  console.log(captchaResponse);
+  res.json({text: captchaResponse.data});
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Error in submitCaptcha: " + error.message });
   }
 });
 
 app.post("/solve-datadome", async (req, res) => {
   const { pageurl, captcha_url, userAgent } = req.body;
-  console.log("received request", cloudflareSiteKey, cloudflarePageUrl);
+  console.log("received datadome request");
 
   try {
     const response = await solver.dataDome({
       pageurl,
       captcha_url,
       userAgent,
-      proxy,
       proxytype: "http",
+      proxy
     });
     console.log(response);
 
@@ -153,6 +123,7 @@ app.post("/solve-datadome", async (req, res) => {
       throw new Error("Error submitting captcha: " + response.text);
     }
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Error in submitCaptcha: " + error.message });
   }
 });

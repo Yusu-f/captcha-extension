@@ -1,4 +1,4 @@
-console.log("Script injected by content script");
+console.log("script injected by puppeteer");
 
 console.clear = () => console.log('Console was cleared')
 const i = setInterval(() => {
@@ -20,8 +20,3 @@ const i = setInterval(() => {
         }
     }
 }, 50)
-
-window.onload = async () => {
-  const sitekey = "0x4AAAAAAADnPIDROrmt1Wwj";
-  // solveCloudflare(sitekey, window.location.href);
-};
