@@ -1,0 +1,4 @@
+server/.env
+server/bot.js
+server/datadome-bot.js
+server/node_modules
