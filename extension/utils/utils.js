@@ -61,12 +61,18 @@ const solveCloudflare = async (params) => {
   }
 };
 
-const solveDataDome = async (pageurl, captcha_url, userAgent) => {
+const solveDataDome = async (pageurl, userAgent) => {
   const datadomeCaptcha = await waitFor(
     () => document.querySelector("iframe[src*='captcha']"),
     0
   );
   if (datadomeCaptcha) {
+    console.log("captcha found!, sending request");
+    const captcha_url = datadomeCaptcha.src;
+    if (captcha_url.includes('t=bv')) {
+      throw new Error('Your IP has been blocked by DataDome');
+    }
+
     try {
       const requestBody = {
         pageurl,
@@ -82,9 +88,31 @@ const solveDataDome = async (pageurl, captcha_url, userAgent) => {
       });
 
       const captchaSolution = await response.json();
-      const cookieString = captchaSolution.solution.cookie;
-      document.cookie = cookieString;
-      console.log("captcha solved!");
+      console.log("captchaSolution:", captchaSolution);
+      if (captchaSolution.data) {
+        const cookieString = captchaSolution.data;
+      console.log("cookie:", cookieString.split(';')[0].split('=')[1]);
+        const headers = {
+          "content-type": "application/json",
+          "user-agent": userAgent,
+          "accept": "application/json, text/plain, */*",
+          "sec-fetch-site": "same-origin",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": pageurl,
+          "accept-encoding": "gzip, deflate, br, zstd",
+          "accept-language": "en-US,en;q=0.9,fr;q=0.8",
+          "cookie": `datadome=${cookieString.split(';')[0].split('=')[1]}`,
+        };
+        const response = await fetch(pageurl, {
+          method: "GET",
+          headers: headers,
+        });
+        if (response.status === 200) {
+          console.log("captcha solved!");
+          window.location.reload();
+        }
+      }
     } catch (error) {
       console.error("Error:", error);
     }

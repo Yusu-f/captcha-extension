@@ -62,6 +62,7 @@ const solveImageCaptcha = async (req, res) => {
 
 const solveDataDomeCaptcha = async (req, res) => {
   const { pageurl, captcha_url, userAgent } = req.body;
+  console.log("datadome request received");
 
   try {
     const response = await solver.dataDome({
@@ -72,7 +73,8 @@ const solveDataDomeCaptcha = async (req, res) => {
       proxy,
     });
 
-    if (response && response.solution) {
+    if (response && response.data) {
+      console.log(response);
       res.status(200).json(response);
     } else {
       throw new Error("Error submitting captcha: " + response.text);
